@@ -1,0 +1,31 @@
+# Site settings
+title: Seungmine
+description: >
+    seungmine
+author: seungmine
+email: minmid.lee@gmail.com
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://effectivemadness.github.io" # the base hostname & protocol for your site
+# twitter_username: YourTwitter
+github_username:  effectivemadness
+
+# disqus_shortname: YourDisqusShortname
+
+# Build settings
+include: [_pages]
+markdown: kramdown
+permalink: /:year/:month/:title
+sass:
+    style: compressed
+
+gems:
+  - jemoji
+  - jekyll-sitemap
+# - amp-jekyll # Acceletrated Mobile Pages
+
+# AMP Settings
+# ampdir: amp/
+# enable_amp: true
+
+# Google Analytics
+# google_analytics: UA-XXXXXXXX-X
