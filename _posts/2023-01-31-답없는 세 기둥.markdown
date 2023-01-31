@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "답없는 세 기둥"
-date:   2023-01-31 22:35:12
+date:   2023-01-31 22:35:12+0900
 ---
 [Ben Sigelman의 글](https://medium.com/lightstephq/three-pillars-with-zero-answers-2a98b36358b8)을 번역한 포스팅입니다. 저자에게 번역 후 게재를 허락 받았습니다. Observability 관련해서 SaaS 솔루션들을 찾아보다가 비용 관점에서도 그렇고 구성 후 사용 관점에서도 그렇고 혼란에 빠져 있던 중, ["관찰 가능성, 3년을 돌아보며"](https://heojay.dev/dev/observability-1/) 블로그 글을 읽으면서 많은 공감이 들었습니다. 그 글 안에서 인용한 Ben Sigelman의 "Three Pillars with Zero Answers"를 읽고 번역해보았습니다.
 
