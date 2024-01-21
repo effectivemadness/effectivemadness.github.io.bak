@@ -1,0 +1,58 @@
+---
+layout: post
+title:  "eksctl 써서 EKS클러스터 간단하게 만들기"
+date:   2024-01-21 22:33:13+0900
+---
+업무 중 테스트 K8s 클러스터를 만들어야 할 일이 자주 있다. 처음에는 Docker Desktop 에서 제공하는 K8s 클러스터를 사용해서 테스트를 진행했지만, 외부에서 접속하고 테스트해야 할 일도 계속 발생해 아예 회사 테스트 AWS계정에 EKS 클러스터를 만들어 쓰는게 나을 것 같다는 생각을 했다.
+
+EKS클러스터를 만드는 방식은 여러가지가 있다. AWS 웹 콘솔에서 만들 수도 있고, Terraform 코드들을 모으거나 직접 작성을 해 적용할 수도 있다. 처음에는 Terraform 코드를 여기저기서 모으고, 내 입맛에 맞춰 이것 저것 건드려가며 클러스터를 배포했다. 코드 한벌만 만들어두면 변수로 들어가는 이름같은것만 바꿔 필요할때마다 Apply 하면 되었다. 하지만 나중에는 그것조차도 좀 간략화 하고 싶어, 다른 방법을 찾던 중 AWS유저그룹에서 들었던 eksctl을 사용해봤다.
+
+eksctl은 AWS EKS를 관리하는 cli 어플리케이션이다. EKS 클러스터를 배포/제거하거나 업그레이드, 수정을 하는데 사용할 수 있다. EKS클러스터를 사용할 때 귀찮은 것들을 자동화해주는 것이 많이 종종 AWS공식 문서에도 등장한다. (예를 들어 ELB Addon 설치할 때 irsa 구성이라던지...)
+
+일단 이번 글에서는 eksctl을 사용해 EKS클러스터를 배포해보자. 배포 전 사용할 eksctl을 설치해둔다.
+
+```
+# On Mac
+brew tap weaveworks/tap
+brew install weaveworks/tap/eksctl
+
+# on Windows - Chocolatey 가 필요하다.
+choco install eksctl 
+```
+
+설치된 후, 클러스터 배포는 정말 쉽다. aws 명령어에 credential 이 구성되어 있다는 가정하에(`aws sts get-caller-identity`했을 때 제대로 실행이 되면), 아래 명령어 한 줄만 치면 알아서 클러스터 배포가 된다.
+
+```
+eksctl create cluster
+
+```
+
+테스트 용도로만 쓴다 하면 이렇게 간단하게 구성만 해서 사용해도 될 것 같다. 이 명령어를 실행하면, AWS CLI 설정에서 지정한 기본 리전에 기본적으로 EKS클러스터를 위한 VPC를 하나 생성 후 EKS클러스터가 한 개의 Managed nodegroup, 2개의 m5.large 노드를 가지고 배포 된다. 실행 후 명령어를 보면, 알아서 위의 구성을 가진 Cloudformation 스택을 만들어 배포를 하는 것을 확인할 수 있다. 그리고 실제로 직접 AWS 웹 콘솔의 Cloudformation 페이지를 가도 배포가 진행되고 있는 것을 확인할 수 있다.
+
+다만, 기본 모양으로는 테스트에 필요한 사항을 만족할 수 없을때가 있다. 노드 수를 바꾸거나 노드그룹을 여러개 만들거나 타입을 바꾸거나... 하기 위해서는 우리가 원하는 노드 모영을 파일로 구성해 eksctl에서 던져줄 수 있다. 여러 예시가 있지만, 내가 주로 사용하는 큰 틀은 아래와 같다.
+
+```
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: test-cluster # 클러스터 이름
+  region: ap-northeast-2 # 리전
+
+managedNodeGroups:
+  - name: mng-1 # Managed Node Group 생성
+    instanceType: m5.large # 인스턴스 타입
+    desiredCapacity: 2 # 노드 2개 구성
+    volumeSize: 100 # 볼륨사이즈는 100GB
+
+cloudWatch: # Cloudwatch 설정 
+  clusterLogging: # 모든 로그를 수집해 3일동안 유지
+    enableTypes: ["*"]
+    logRetentionInDays: 3
+```
+
+테스트 위주로 진행을 하고, Pod 수는 꽤 많이 뜰 때가 있어 m5.large를 사용한다. cloudwatch log같은 경우, 권한문제나 Admission Controller를 테스트할때 Control plane 로그로 트러블 슈팅한 경험이 있어 그 뒤로 로그 수집을 켜두고 있다.
+
+그외, [노드에 SSH 키를 지정](https://eksctl.io/usage/managing-nodegroups/#ssh-access), [EKS Addon 구성](https://eksctl.io/usage/addons/), [이미 있는 VPC에 구성](https://eksctl.io/usage/vpc-configuration/#use-an-existing-vpc-shared-with-kops), [클러스터 업데이트 진행](https://eksctl.io/usage/cluster-upgrade/) 등 eksctl로 다양한 EKS클러스터 관리를 할 수 있다고 한다. Addon 같은 경우, 실제로 저번까지 eksctl로 클러스터를 만든 후 따로 추가적인 과정을 수동으로 진행했었는데 다시 쓸 일 있으면 addon을 써보고 정리해봐야겠다.
+
+
